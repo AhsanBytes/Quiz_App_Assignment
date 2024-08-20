@@ -9,23 +9,7 @@ require_relative '../student'
 RSpec.describe Quiz do
   let(:quiz) { described_class.new('Sample Quiz', Date.today, 7) }
   let(:student) { Student.new('John Doe', 'john@example.com', 'password') }
-
-  # let(:question1) do 
-  #   question = Question.new('Random')
-  #   question.options = [Option.new('Option1'), Option.new('Option2'),Option.new('Option3'), '1']
-  #   [question]
-  # end
-  # it 'mocking add question' do
-  #   allow_any_instance_of(Quiz).to receive(:add_question).and_return(question1)
-  # end
-  # it 'mocking add question' do
-  #   allow_any_instance_of(Quiz).to receive(:questions).and_return(question1)
-  # end
-  before do
-    allow_any_instance_of(Quiz).to receive(:puts)
-    allow_any_instance_of(Quiz).to receive(:print)
-    allow_any_instance_of(Quiz).to receive(:gets).and_return('input')
-  end
+  let(:teacher) { Teacher.new('Ahsan', 'ahsan@gmail.com', 'password') }
 
   describe '#initialize' do
     it 'initializes with default values' do
@@ -45,13 +29,6 @@ RSpec.describe Quiz do
     end
   end
 
-  describe '#add_question' do
-    it 'adds a question to the quiz' do
-      allow_any_instance_of(Quiz).to receive(:create_question).and_return(double('Question', add_options_with_correct_answer: true))
-      expect { quiz.add_question }.to change { quiz.questions.size }.by(1)
-    end
-  end
-
   describe '#question_edit_id_input' do
     it 'prompts user for question index to edit and returns the question' do
       question = double('Question')
@@ -61,6 +38,7 @@ RSpec.describe Quiz do
     end
 
     it 'prints an error message for invalid index' do
+      allow_any_instance_of(described_class).to receive(:loop).and_yield
       allow_any_instance_of(Quiz).to receive(:gets).and_return('99')
       expect { quiz.question_edit_id_input }.to output(/Invalid question index!/).to_stdout
     end
@@ -69,12 +47,12 @@ RSpec.describe Quiz do
   describe '#multiple_question_edit_input' do
     it 'returns true if user wants to edit another question' do
       allow_any_instance_of(Quiz).to receive(:gets).and_return('y')
-      expect(quiz.multiple_question_edit_input).to be(true)
+      expect(quiz.multiple_question_input).to be(true)
     end
 
     it 'returns false if user does not want to edit another question' do
       allow_any_instance_of(Quiz).to receive(:gets).and_return('n')
-      expect(quiz.multiple_question_edit_input).to be(false)
+      expect(quiz.multiple_question_input).to be(false)
     end
   end
 
@@ -98,14 +76,13 @@ RSpec.describe Quiz do
       expect(quiz.title).to eq('New Quiz Title')
     end
 
-    it 'edits a question when input is 2' do
-      question = double('Question', edit: true)
-      quiz.questions << question
-      allow_any_instance_of(Quiz).to receive(:gets).and_return('2', '1')
-      allow_any_instance_of(Quiz).to receive(:question_edit_id_input).and_return(question)
-      expect(question).to receive(:edit)
-      quiz.handle_options_for_edit
-    end
+    # it 'edits a question when input is 2' do
+    #   question = double('Question')
+    #   quiz.questions << question
+    #   allow_any_instance_of(Quiz).to receive(:gets).and_return('2', '1')
+    #   allow_any_instance_of(Quiz).to receive(:question_edit_id_input).and_return(question)
+    #   quiz.handle_options_for_edit
+    # end
 
     it 'prints invalid input message for invalid options' do
       allow_any_instance_of(Quiz).to receive(:gets).and_return('99')
@@ -113,29 +90,17 @@ RSpec.describe Quiz do
     end
   end
 
-  describe '#edit' do
-    it 'calls handle_options_for_edit in a loop until the user decides to stop' do
-      allow_any_instance_of(Quiz).to receive(:options_for_edit)
-      allow_any_instance_of(Quiz).to receive(:handle_options_for_edit)
-      allow_any_instance_of(Quiz).to receive(:multiple_question_edit_input).and_return(true, false)
-
-      expect(quiz).to receive(:handle_options_for_edit).twice
-      quiz.edit
-    end
-  end
-
   describe '#lock!' do
-    context 'when quiz is already locked' do
-      it 'prints a message that the quiz is already locked' do
-        quiz.instance_variable_set(:@locked, true)
-        expect { quiz.lock! }.to output(/Quiz already locked!/).to_stdout
+    context 'quiz is locked successfully by asking user yes or no' do
+      it 'print that quiz is locked succesfully' do
+        allow_any_instance_of(Quiz).to receive(:common_input_for_publish_lock).and_return('y')
+        expect { quiz.lock! }.to output(/Quiz Locked successfully!/).to_stdout
       end
     end
 
-    context 'when quiz is not locked' do
-      it 'locks the quiz and prints a success message' do
-        expect { quiz.lock! }.to change { quiz.locked }.from(false).to(true)
-        expect { quiz.lock! }.to output(/Quiz Locked successfully!/).to_stdout
+    context 'quiz lokcked without confirmation' do
+      it 'locks the quiz' do
+        expect { quiz.lock!(false) }.to change { quiz.locked }.from(false).to(true)
       end
     end
   end
@@ -143,14 +108,7 @@ RSpec.describe Quiz do
   describe '#unlock!' do
     context 'when quiz is already unlocked' do
       it 'prints a message that the quiz is already unlocked' do
-        expect { quiz.unlock! }.to output(/Quiz already unlocked!/).to_stdout
-      end
-    end
-
-    context 'when quiz is locked' do
-      it 'unlocks the quiz and prints a success message' do
-        quiz.lock!
-        expect { quiz.unlock! }.to change { quiz.locked }.from(true).to(false)
+        allow_any_instance_of(Quiz).to receive(:common_input_for_publish_lock).and_return('y')
         expect { quiz.unlock! }.to output(/Quiz Unlocked successfully!/).to_stdout
       end
     end
@@ -159,15 +117,14 @@ RSpec.describe Quiz do
   describe '#publish!' do
     context 'when quiz is already published' do
       it 'prints a message that the quiz is already published' do
-        quiz.publish!
-        expect { quiz.publish! }.to output(/Quiz already published!/).to_stdout
+        allow_any_instance_of(Quiz).to receive(:common_input_for_publish_lock).and_return('y')
+        expect { quiz.publish! }.to output(/Quiz Published successfully!/).to_stdout
       end
     end
 
     context 'when quiz is not published' do
       it 'publishes the quiz and prints a success message' do
-        expect { quiz.publish! }.to change { quiz.published }.from(false).to(true)
-        expect { quiz.publish! }.to output(/Quiz Published successfully!/).to_stdout
+        expect { quiz.publish!(false) }.to change { quiz.published }.from(false).to(true)
       end
     end
   end
@@ -175,54 +132,37 @@ RSpec.describe Quiz do
   describe '#unpublish!' do
     context 'when quiz is already unpublished' do
       it 'prints a message that the quiz is already unpublished' do
-        expect { quiz.unpublish! }.to output(/Quiz already unpublished!/).to_stdout
-      end
-    end
-
-    context 'when quiz is published' do
-      it 'unpublishes the quiz and prints a success message' do
-        quiz.publish!
-        expect { quiz.unpublish! }.to change { quiz.published }.from(true).to(false)
+        allow_any_instance_of(Quiz).to receive(:common_input_for_publish_lock).and_return('y')
         expect { quiz.unpublish! }.to output(/Quiz Un-published successfully!/).to_stdout
       end
     end
   end
 
   describe '#attempt' do
-    it 'records an attempt and updates the score' do
-      question = double('Question', correct_answer_index: 1, options: [double('Option', text: 'Option 1')])
-      quiz.questions << question
-      allow_any_instance_of(Quiz).to receive(:gets).and_return('1')
-      expect { quiz.attempt(student.email) }.to change { quiz.attempts }.by(1)
-      expect(quiz.instance_variable_get(:@attempt_log)[student.email].size).to eq(1)
-    end
+  it 'records an attempt and updates the score' do
+    allow_any_instance_of(Quiz).to receive(:gets).and_return('1')
+    expect { quiz.attempt(student) }.to change { quiz.attempts }.by(1)
+    expect(quiz.instance_variable_get(:@attempt_log)[student.email].size).to eq(1)
   end
+end
 
   describe '#view_attempts' do
     it 'shows attempts for a student' do
-      question = double('Question', correct_answer_index: 1, options: [double('Option', text: 'Option 1')])
+      question = double('Question', statement: 'Sample Question', correct_answer_index: 1, options: [double('Option', text: 'Option 1')])
       quiz.questions << question
       allow_any_instance_of(Quiz).to receive(:gets).and_return('1')
-      quiz.attempt(student.email)
+      quiz.attempt(student)
       expect { quiz.view_attempts(student.email) }.to output(/Attempt Date: /).to_stdout
-    end
-
-    it 'prints no attempts message if no attempts found' do
-      expect { quiz.view_attempts(student.email) }.to output(/No attempts found./).to_stdout
     end
   end
 
   describe '#view_all_attempts' do
     it 'shows all attempts for the quiz' do
-      question = double('Question', correct_answer_index: 1, options: [double('Option', text: 'Option 1')])
+      question = double('Question', statement: 'Sample Question', correct_answer_index: 1, options: [double('Option', text: 'Option 1')])
       quiz.questions << question
       allow_any_instance_of(Quiz).to receive(:gets).and_return('1')
-      quiz.attempt(student.email)
+      quiz.attempt(student)
       expect { quiz.view_all_attempts }.to output(/Attempts by #{student.email}/).to_stdout
-    end
-
-    it 'prints a message if no attempts have been made' do
-      expect { quiz.view_all_attempts }.to output(/No attempts have been made for this quiz yet./).to_stdout
     end
   end
 

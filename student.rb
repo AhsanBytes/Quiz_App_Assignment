@@ -4,7 +4,11 @@ require_relative 'user'
 require_relative 'quiz'
 # student class have actions like attempt quiz, view attempts, list all quizzes and view quizzes by date
 class Student < User
-  quizzes ||= []
+  attr_accessor :attempts
+  def initialize(name, email, password)
+    super
+    @attempts = 0
+  end
 
   def options(quizzes)
     loop do
@@ -19,37 +23,24 @@ class Student < User
     end
   end
 
-  private
+  # private
 
   def handle_student_options(quizzes)
-    choice = gets.strip.to_i
-    case choice
-    when 1
-      attempt_quiz(quizzes)
-      false
-    when 2
-      view_attempts(quizzes)
-      false
-    when 3
-      view_quizzes_by_date(quizzes)
-      false
-    when 4
-      list_quizzes(quizzes)
-      false
-    when 5
-      true
-    when 6
-      exit
+    case gets.strip.to_i
+    when 1 then attempt(quizzes)
+    when 2 then view_attempts(quizzes)
+    when 3 then view_quizzes_by_date(quizzes)
+    when 4 then print(quizzes)
+    when 5 then 'Logging out...'
+    when 6 then exit
     else
       puts 'Invalid option, please try again!'
-      false
     end
   end
 
   def print(quizzes)
-    quizzes.each_with_index do |quiz, index|
-      puts "Quiz ID: #{index + 1}, Quiz Title: #{quiz.title}"
-    end
+    quizzes.each_with_index { |quiz, index| puts "Quiz ID: #{index + 1}, Quiz Title: #{quiz.title}" }
+    false
   end
 
   def quiz_id_input(quizzes)
@@ -62,13 +53,11 @@ class Student < User
     end
   end
 
-  def attempt_quiz(quizzes)
+  def attempt(quizzes)
     return puts 'No quizzes available!' if quizzes.empty?
 
     print(quizzes)
-    quiz_id = quiz_id_input(quizzes)
-    quiz = quizzes[quiz_id]
-    student_score = quiz.attempt(email)
+    student_score = quizzes[quiz_id_input(quizzes)].attempt(self)
     puts "Quiz Attempted Successfully. Your score: #{student_score}"
   end
 
@@ -79,35 +68,26 @@ class Student < User
       next puts 'No attempts found for this quiz.' if quiz.attempts.zero?
 
       puts "\nQuiz: #{quiz.title}"
-      attempts = quiz.view_attempts(email)
+      quiz.view_attempts(email)
     end
+    false
   end
 
-  def verify_date
+  def verified_date
     loop do
       puts 'Enter date to view quizzes (YYYY-MM-DD):'
       input = gets.chomp
-      if input.match(/\A\d{4}-\d{2}-\d{2}\z/)
-        break Date.parse(input)
-      end
+      break Date.parse(input) if input.match(/\A\d{4}-\d{2}-\d{2}\z/)
 
       puts 'Invalid date. Please enter a valid date in the format YYYY-MM-DD.'
     end
   end
 
   def view_quizzes_by_date(published_unlocked_quizzes)
-    input_date = verify_date
-    available_quizzes = published_unlocked_quizzes.select do |quiz|
-      quiz.available_on_date?(input_date)
-    end
+    available_quizzes = published_unlocked_quizzes.select { |quiz| quiz.available_on_date?(verified_date) }
     return puts 'No quizzes available on this date.' if available_quizzes.empty?
 
-    available_quizzes.each do |quiz|
-      puts "Quiz: #{quiz.title}, Deadline: #{quiz.deadline}"
-    end
-  end
-
-  def list_quizzes(quizzes)
-    print(quizzes)
+    available_quizzes.each { |quiz| puts "Quiz: #{quiz.title}, Deadline: #{quiz.deadline}" }
+    false
   end
 end

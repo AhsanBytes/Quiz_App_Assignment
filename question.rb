@@ -15,26 +15,31 @@ class Question
   def edit
     loop do
       edit_options
-      handle_edit_options
+      process_choice(gets.chomp.to_i)
       break unless multiple_edit_input
 
     end
   end
 
-  private
+  def add_options(index)
+    loop do
+      puts "Enter Option #{index + 1}: "
+      option_text = gets.chomp.strip
+      # binding.irb
+      break @options << Option.new(option_text) unless option_text.empty?
+      
+      puts 'Option cannot be empty.'
+    end
+  end
 
   def add_options_with_correct_answer
     3.times do |i|
-      loop do
-        puts "Enter Option #{i + 1}: "
-        option_text = gets.chomp.strip
-        break @options << Option.new(option_text) unless option_text.empty?
-        
-        puts 'Option cannot be empty.'
-      end
+      add_options(i)
     end
     set_correct_answer
   end
+
+  # private
 
   def set_correct_answer
     loop do
@@ -74,11 +79,6 @@ class Question
     else
       puts 'Invalid choice!'
     end
-  end
-
-  def handle_edit_options
-    choice = gets.chomp.to_i
-    process_choice(choice)
   end
 
   def multiple_edit_input

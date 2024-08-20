@@ -5,6 +5,7 @@ require_relative 'quiz'
 require 'date'
 # teacher class actions like creating quizzes,editing quizzes,view attempts,publish,unpublis,lock and unlock quizzes
 class Teacher < User
+  attr_reader :quizzes
   def initialize(name, email, password)
     super
     @quizzes = []
@@ -26,48 +27,30 @@ class Teacher < User
     end
   end
 
-  def select_quizzes(action)
-    @quizzes.select { |quiz| quiz.public_send(action) }
+  def select_quizzes(quizzes, action)
+    quizzes.select { |quiz| quiz.public_send(action) }
   end
 
-  def reject_quizzes(action)
-    @quizzes.reject {|quiz| quiz.public_send(action)}
+  def reject_quizzes(quizzes, action)
+    quizzes.reject {|quiz| quiz.public_send(action)}
   end
 
-  private
+  # private
 
   def handle_teacher_options
     choice = gets.strip.to_i
     case choice
-    when 1
-      create_quiz
-      false
-    when 2
-      edit_quiz
-      false
-    when 3
-      publish_quiz
-      false
-    when 4
-      unpublish_quiz
-      false
-    when 5
-      lock_quiz
-      false
-    when 6
-      unlock_quiz
-      false
-    when 7
-      view_attempts
-      false
-    when 8
-      puts 'Logging out...'
-      true
-    when 9
-      exit
+    when 1 then create_quiz
+    when 2 then edit_quiz
+    when 3 then publish_quiz
+    when 4 then unpublish_quiz
+    when 5 then lock_quiz
+    when 6 then unlock_quiz
+    when 7 then view_attempts
+    when 8 then 'Logging out...'
+    when 9 then exit
     else
       puts 'Invalid option, please try again!'
-      false
     end
   end
 
@@ -75,23 +58,17 @@ class Teacher < User
     loop do
       puts 'Enter Quiz Title: '
       title = gets.chomp.strip
-      if title.empty?
-        puts 'Title cannot be empty.'
-      elsif !title.match?(/\A[a-zA-Z\s]+\z/)
-        puts 'Title must only contain alphabets and spaces.'
-      else
-        break title
+      break title if title.match(/\A[a-zA-Z]+(?:\s[a-zA-Z]+)*\z/)
 
-      end
+      puts 'Title must contain alphabets and spaces'
     end
   end
 
   def quiz_availability_input
     loop do
       puts "Enter days for quiz availability: "
-      input = gets.chomp
-      days = input.to_i
-      break days if input.match?(/\A\d{1,2}\z/)
+      days = gets.chomp.to_i
+      break days if days.between?(1, 99)
 
       puts 'Invalid input! Please enter a valid number of days.'
     end
@@ -134,37 +111,32 @@ class Teacher < User
     helper_listing_quizzes(@quizzes)
   end
 
-  def helper_for_publish_lock(quizzes)
+  def helper_for_publish_lock(action, selection_method)
+    quizzes = public_send(selection_method, @quizzes, action)
+    return puts 'No quizzes to show for action' if quizzes.empty?
+
     helper_listing_quizzes(quizzes)
     quiz_id_input(quizzes)
   end
 
   def publish_quiz
-    quizzes = reject_quizzes(:published)
-    return puts 'No quizzes to show for action' if quizzes.empty?
-
-    helper_for_publish_lock(quizzes).publish!(false)
+    quiz = helper_for_publish_lock(:published, :reject_quizzes)
+    quiz.publish!(false) if quiz
   end
 
   def unpublish_quiz
-    quizzes = select_quizzes(:published)
-    return puts 'No quizzes to show for action' if quizzes.empty?
-
-    helper_for_publish_lock(quizzes).unpublish!(false)
+    quiz = helper_for_publish_lock(:published, :select_quizzes)
+    quiz.unpublish!(false) if quiz
   end
 
   def lock_quiz
-    quizzes = reject_quizzes(:locked)
-    return puts 'No quizzes to show for action' if quizzes.empty?
-
-    helper_for_publish_lock(quizzes).lock!(false)
+    quiz = helper_for_publish_lock(:locked, :reject_quizzes)
+    quiz.lock!(false) if quiz
   end
 
   def unlock_quiz
-    quizzes = select_quizzes(:locked)
-    return puts 'No quizzes to show for action' if quizzes.empty?
-
-    helper_for_publish_lock(quizzes).unlock!(false)
+    quiz = helper_for_publish_lock(:locked, :select_quizzes)
+    quiz.unlock!(false) if quiz
   end
 
   def view_attempts
@@ -176,6 +148,6 @@ class Teacher < User
 
       quiz.view_all_attempts
     end
-
+    false
   end
 end

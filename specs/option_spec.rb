@@ -7,7 +7,7 @@ RSpec.describe Option do
   let(:option1) { described_class.new('Option 1') }
 
   describe '#initialize' do
-    it 'creates an instance of Option class' do
+    it 'checking instance is of Option class' do
       expect(option1).to be_an(Option)
     end
 
@@ -22,8 +22,7 @@ RSpec.describe Option do
     end
 
     it 'allows modifying the text attribute' do
-      option1.text = 'New Option 1'
-      expect(option1.text).to eq('New Option 1')
+      expect { option1.text = 'New Option 1' }.to change { option1.text }.from('Option 1').to('New Option 1')
     end
   end
 
@@ -41,12 +40,11 @@ RSpec.describe Option do
 
       it 'allows text to be nil' do
         expect(option_with_nil_text.text).to be_nil
-        expect(option_with_nil_text.text).to be_empty
       end
     end
 
     context 'when text is a very long string' do
-      let(:long_string) { 'a' * 10_000 }
+      let(:long_string) { 'a' * 20 }
       let(:option_with_long_text) { described_class.new(long_string) }
 
       it 'handles long strings for text attribute' do

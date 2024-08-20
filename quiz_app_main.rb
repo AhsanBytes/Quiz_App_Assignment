@@ -9,7 +9,19 @@ class Main
     @current_user = nil
   end
 
-  private
+  def main
+    loop do
+      if @current_user
+        @current_user.options(published_unlocked_quizzes)
+        logout 
+      else
+        signup_login_options
+        process_signup_login_choice
+      end
+    end
+  end
+
+  # private
 
   ROLE_MAP = { 1 => Teacher, 2 => Student }
 
@@ -21,70 +33,46 @@ class Main
   end
 
   def name_validation?(name)
-    if name.length <= 2 || name.length > 15
-      puts 'Re-enters correct name!(Should be 3 to 15 char)'
-      false
-    elsif !name.match?(/[a-zA-Z]/)
-      puts 'Name must be Alphabetic!'
-      false
-    else
-      true
-    end
+    return "Name should be 3 to 15 aplhabetic chars" unless name.match?(/^[a-zA-Z]{3,15}$/)
+
+    true
   end
 
   def email_validation?(email)
-    if email.match?(/\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i)
-      true
-    else
-      puts 'Enter Valid Email (Gmail Account only)'
-      false
-    end
+    return puts 'Enter Valid Email (Gmail Account only)' unless email.match?(/\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i)
+    
+    true
   end
 
   def password_validation?(password)
-    if password.length <= 8 || password.length > 15
-      puts 'Password should be 9 to 15 char'
-      false
-    else
-      true
-    end
+    return puts 'Password should be 9 to 15 char' unless password.length.between?(9, 15)
+
+    true
   end
 
   def valid_email
-    email = ''
     loop do
       print 'Enter your Email: '
       email = gets.strip
-      break if email_validation?(email)
+      break email if email_validation?(email)
     end
-    email
   end
 
   def valid_password
-    password = ''
     loop do
       print 'Enter your Password: '
       password = gets.strip
-      break if password_validation?(password)
+      break password if password_validation?(password)
     end
-    password
   end
 
   def find_user_by_email(email)
-    @storage.each_value do |array|
-      user = array.find { |u| u.email == email }
-      return user if user
-    end
-    nil
-  end
-
-  def verify_user_password(user, password)
-    user.password == password
+    @storage.values.flatten.find { |u| u.email == email }
   end
 
   def find_user_by_credentials(email, password)
     user = find_user_by_email(email)
-    user if user && verify_user_password(user, password)
+    user if user&.password == password
   end
 
   def role_input
@@ -96,7 +84,6 @@ class Main
   def signup_input
     return 'You must be logged-out to SignUp for another email! ' if @current_user
 
-    name = ''
     loop do
       print 'Enter your Name: '
       name = gets.strip
@@ -106,7 +93,7 @@ class Main
     user = find_user_by_email(email)
     if user
       puts 'Email already exists!'
-      return signup_input
+      return signup_login_options
     end
     password = valid_password
     [name, email, password]
@@ -124,14 +111,11 @@ class Main
 
   def signup
     name, email, password = signup_input    
-    role_class = role_checks
-    role_initialization_and_adding_to_storage(role_class, name, email, password)
+    role_initialization_and_adding_to_storage(role_checks, name, email, password)
   end
 
   def login
-    email = valid_email
-    password = valid_password
-    user = find_user_by_credentials(email, password)
+    user = find_user_by_credentials(valid_email, valid_password)
     if user
       @current_user = user
       puts 'Login Successful!'
@@ -140,13 +124,8 @@ class Main
     end
   end
 
-  def handle_signup_login_options
-    choice = gets.strip.to_i
-    process_signup_login_choice(choice)
-  end
-
-  def process_signup_login_choice(choice)
-    case choice
+  def process_signup_login_choice
+    case gets.strip.to_i
     when 1 then signup
     when 2 then login
     when 3 then exit
@@ -165,8 +144,8 @@ class Main
     return quizzes if @current_user.is_a?(Teacher)
   
     @storage['Teacher'].each do |teacher|
-      available_quizzes = quizzes.concat(teacher.select_quizzes(:published) && teacher.reject_quizzes(:locked))
-      available_quizzes.each do |quiz|
+      published_quizzes = teacher.select_quizzes(teacher.quizzes, :published)
+      teacher.reject_quizzes(published_quizzes, :locked).each do |quiz|
         if Date.today <= quiz.deadline
           quizzes << quiz unless quizzes.include?(quiz)
         end
@@ -175,8 +154,6 @@ class Main
     quizzes
   end
 
-  public
-
   def role_initialization_and_adding_to_storage(role_class, name, email, password)
     instance = role_class.new(name, email, password)
     role_key = role_class.name
@@ -184,25 +161,19 @@ class Main
     puts 'SignUp Successful!'
   end
 
-  def main
-    loop do
-      if @current_user
-        @current_user.options(published_unlocked_quizzes)
-        logout 
-      else
-        signup_login_options
-        handle_signup_login_options
-      end
-    end
+  def default_users
+    password = '123456789'
+    role_initialization_and_adding_to_storage(Teacher, 'Ahsan', 'ahsan@gmail.com', password)
+    role_initialization_and_adding_to_storage(Student, 'Ans', 'ans@gmail.com', password)
   end
 end
 
+# obj = Main.new
+# obj.default_users
+# obj.main
 
-obj = Main.new
-def obj.default_users
-  password = '123456789'
-  role_initialization_and_adding_to_storage(Teacher, 'Ahsan', 'ahsan@gmail.com', password)
-  role_initialization_and_adding_to_storage(Student, 'Ans', 'ans@gmail.com', password)
+if __FILE__ == $0
+  obj = Main.new
+  obj.default_users
+  obj.main
 end
-obj.default_users
-obj.main

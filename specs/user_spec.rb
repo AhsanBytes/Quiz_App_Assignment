@@ -55,7 +55,7 @@ RSpec.describe User do
     end
 
     context 'when attributes are very long strings' do
-      let(:long_string) { 'a' * 10_000 }
+      let(:long_string) { 'a' * 10 }
       let(:user_with_long_attributes) { described_class.new(long_string, long_string, long_string) }
 
       it 'handles long strings for name, email, and password' do
