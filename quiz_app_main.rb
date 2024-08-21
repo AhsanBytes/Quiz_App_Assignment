@@ -21,8 +21,6 @@ class Main
     end
   end
 
-  # private
-
   ROLE_MAP = { 1 => Teacher, 2 => Student }
 
   def signup_login_options
@@ -167,10 +165,6 @@ class Main
     role_initialization_and_adding_to_storage(Student, 'Ans', 'ans@gmail.com', password)
   end
 end
-
-# obj = Main.new
-# obj.default_users
-# obj.main
 
 if __FILE__ == $0
   obj = Main.new

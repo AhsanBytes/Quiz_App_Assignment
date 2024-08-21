@@ -105,8 +105,6 @@ class Quiz
     (@created_at..@deadline).cover?(date)
   end
 
-  # private
-
   def multiple_question_input
     puts 'Do you want to add/edit another question? (y/n): '
     gets.chomp.downcase == 'y'

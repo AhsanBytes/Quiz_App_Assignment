@@ -23,8 +23,6 @@ class Student < User
     end
   end
 
-  # private
-
   def handle_student_options(quizzes)
     case gets.strip.to_i
     when 1 then attempt(quizzes)

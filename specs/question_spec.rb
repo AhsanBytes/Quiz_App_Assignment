@@ -7,7 +7,6 @@ require_relative '../option'
 RSpec.describe Question do
 
   let(:question) { described_class.new('What is the capital of France?') }
-
   describe 'initialize' do
     it 'initializes with a statement and empty options' do
       expect(question.statement).to eq('What is the capital of France?')
@@ -37,7 +36,6 @@ RSpec.describe Question do
   end
 
   describe '#set_correct_answer' do
-
     it 'sets the correct answer based on valid input' do
       allow_any_instance_of(described_class).to receive(:gets).and_return('1')
       question.set_correct_answer

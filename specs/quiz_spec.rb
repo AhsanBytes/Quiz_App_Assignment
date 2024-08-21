@@ -76,14 +76,6 @@ RSpec.describe Quiz do
       expect(quiz.title).to eq('New Quiz Title')
     end
 
-    # it 'edits a question when input is 2' do
-    #   question = double('Question')
-    #   quiz.questions << question
-    #   allow_any_instance_of(Quiz).to receive(:gets).and_return('2', '1')
-    #   allow_any_instance_of(Quiz).to receive(:question_edit_id_input).and_return(question)
-    #   quiz.handle_options_for_edit
-    # end
-
     it 'prints invalid input message for invalid options' do
       allow_any_instance_of(Quiz).to receive(:gets).and_return('99')
       expect { quiz.handle_options_for_edit }.to output(/Invalid Input!/).to_stdout

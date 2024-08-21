@@ -25,7 +25,6 @@ class Question
     loop do
       puts "Enter Option #{index + 1}: "
       option_text = gets.chomp.strip
-      # binding.irb
       break @options << Option.new(option_text) unless option_text.empty?
       
       puts 'Option cannot be empty.'
@@ -38,8 +37,6 @@ class Question
     end
     set_correct_answer
   end
-
-  # private
 
   def set_correct_answer
     loop do

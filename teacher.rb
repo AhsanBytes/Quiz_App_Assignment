@@ -35,8 +35,6 @@ class Teacher < User
     quizzes.reject {|quiz| quiz.public_send(action)}
   end
 
-  # private
-
   def handle_teacher_options
     choice = gets.strip.to_i
     case choice
